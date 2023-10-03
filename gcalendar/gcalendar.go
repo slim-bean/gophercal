@@ -1,0 +1,166 @@
+package gcalendar
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"os"
+	"time"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
+)
+
+const (
+	calendarName = "primary"
+	// timeZone     = "Europe/Berlin"
+)
+
+type Event struct {
+	Start time.Time
+	End   time.Time
+
+	Title string
+}
+
+type Calendar struct {
+	srv *calendar.Service
+
+	email string
+}
+
+func NewCalendar(credsFile, token, email string) (*Calendar, error) {
+	ctx := context.Background()
+	b, err := os.ReadFile(credsFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := getClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
+	return &Calendar{srv: srv, email: email}, err
+}
+
+func (c Calendar) Events() ([]Event, error) {
+	startTime := time.Now().Add(-6 * time.Hour)
+	endTime := startTime.Add(15 * time.Hour)
+
+	calEvents, err := c.srv.Events.List(calendarName).
+		// TimeZone(timeZone).
+		TimeMin(startTime.Format(time.RFC3339)).
+		TimeMax(endTime.Format(time.RFC3339)).
+		ShowDeleted(false).
+		SingleEvents(true).
+		OrderBy("startTime").
+		Do()
+	if err != nil {
+		return nil, err
+	}
+
+	var events []Event
+	for _, item := range calEvents.Items {
+		// skip the ones I said no to.
+		skip := false
+		for _, attendee := range item.Attendees {
+			if attendee.Email == c.email && attendee.ResponseStatus == "declined" {
+				skip = true
+				break
+			}
+		}
+		if skip {
+			continue
+		}
+		if item.EventType == "workingLocation" {
+			continue
+		}
+		if item.Start.DateTime == "" || item.End.DateTime == "" {
+			continue
+		}
+
+		startTime, err := time.Parse(time.RFC3339, item.Start.DateTime)
+		if err != nil {
+			return nil, err
+		}
+		endTime, err := time.Parse(time.RFC3339, item.End.DateTime)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, Event{Start: startTime, End: endTime, Title: item.Summary})
+	}
+
+	return events, nil
+}
+
+// Retrieve a token, saves the token, then returns the generated client.
+func getClient(config *oauth2.Config) (*http.Client, error) {
+	// The file token.json stores the user's access and refresh tokens, and is
+	// created automatically when the authorization flow completes for the first
+	// time.
+	tokFile := "token.json"
+	tok, err := tokenFromFile(tokFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return oauth2.NewClient(context.Background(), newPersistingTokenSource(config.TokenSource(context.Background(), tok), tokFile)), nil
+}
+
+// Retrieves a token from a local file.
+func tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	tok := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(tok)
+	return tok, err
+}
+
+func persistTokenToFile(tok *oauth2.Token, file string) error {
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return json.NewEncoder(f).Encode(tok)
+}
+
+type persistingTokenSource struct {
+	src       oauth2.TokenSource
+	file      string
+	currentTk *oauth2.Token
+}
+
+func newPersistingTokenSource(src oauth2.TokenSource, file string) *persistingTokenSource {
+	return &persistingTokenSource{src: src, file: file}
+}
+
+func (p *persistingTokenSource) Token() (*oauth2.Token, error) {
+	tk, err := p.src.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.currentTk == nil || p.currentTk.AccessToken != tk.AccessToken {
+		if err := persistTokenToFile(tk, p.file); err != nil {
+			return nil, err
+		}
+		p.currentTk = tk
+	}
+
+	return tk, nil
+}

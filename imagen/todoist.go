@@ -9,21 +9,21 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font/gofont/goregular"
 
-	"github.com/gouthamve/inkplate-adventures/todoist"
+	"github.com/gouthamve/gophercal/todoist"
 )
 
 // The inkplate is 1200x825. 50% of it would be todoist, hence 600x825
 // 75% for task name. 25% for the project
 const (
 	maxTasks             = 15
-	width                = 600.0
-	height               = 825.0
+	todoWidth            = 600.0
+	todoHeight           = 825.0
 	outsideBoundaryWidth = 2.0
 	innerBoundaryWidth   = 3.0
 	lineWidth            = 2.0
 
-	taskPortion    = 0.75
-	projectPortion = 0.25
+	taskPortion    = 0.70
+	projectPortion = 0.30
 )
 
 func GenerateTodoistImage(tasks []todoist.Task) image.Image {
@@ -37,21 +37,20 @@ func GenerateTodoistImage(tasks []todoist.Task) image.Image {
 		tasks = tasks[:maxTasks]
 	}
 
-	tdCtx := gg.NewContext(width, height)
+	tdCtx := gg.NewContext(todoWidth, todoHeight)
 	tdCtx.SetFontFace(face)
 
 	// White background
-	tdCtx.DrawRectangle(0, 0, width, height)
+	tdCtx.DrawRectangle(0, 0, todoWidth, todoHeight)
 	tdCtx.SetRGB(1, 1, 1)
 	tdCtx.Fill()
 
 	tdCtx.SetRGB(0, 0, 0)
-	taskHeight := height / maxTasks
+	taskHeight := todoHeight / maxTasks
 	for i, task := range tasks {
 		// Draw a rectangle
-		yStart := float64(i) * height / maxTasks
-		fmt.Println(yStart)
-		rectangleWidth := width - 2*outsideBoundaryWidth
+		yStart := float64(i) * todoHeight / maxTasks
+		rectangleWidth := todoWidth - 2*outsideBoundaryWidth
 
 		tdCtx.SetLineWidth(lineWidth)
 		tdCtx.DrawRoundedRectangle(outsideBoundaryWidth, yStart, rectangleWidth, taskHeight, 5)
