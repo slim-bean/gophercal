@@ -7,6 +7,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
@@ -16,6 +19,17 @@ import (
 const (
 	calendarName = "primary"
 	// timeZone     = "Europe/Berlin"
+)
+
+var (
+	clientCallHistogram = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "gophercal_googleapi_request_duration_seconds",
+			Help:    "A histogram of request latencies.",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"code", "method"},
+	)
 )
 
 type Event struct {
@@ -48,6 +62,8 @@ func NewCalendar(credsFile, token, email string) (*Calendar, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	client.Transport = promhttp.InstrumentRoundTripperDuration(clientCallHistogram, client.Transport)
 
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
 	return &Calendar{srv: srv, email: email}, err

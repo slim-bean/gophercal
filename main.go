@@ -10,6 +10,9 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/fogleman/gg"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/gouthamve/gophercal/gcalendar"
 	"github.com/gouthamve/gophercal/imagen"
@@ -26,6 +29,15 @@ var gopherCal struct {
 }
 
 func main() {
+	durationHistogram := promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "gophercal_request_duration_seconds",
+			Help:    "A histogram of latencies for requests.",
+			Buckets: []float64{.25, .5, 1, 2.5, 5, 10},
+		},
+		[]string{"handler", "method", "code"},
+	)
+
 	ctx := kong.Parse(&gopherCal,
 		kong.Name("gophercal"),
 		kong.Description("A Google Calendar and Todoist image generator for eInk devices."),
@@ -41,7 +53,8 @@ func main() {
 		calendar, err := gcalendar.NewCalendar(gopherCal.Run.GCalCredsFile, gopherCal.Run.GCalTokenFile, gopherCal.Run.GCalEmail)
 		checkErr(err)
 
-		http.HandleFunc("/dash.jpg", dashHandler(td, calendar))
+		http.Handle("/dash.jpg", promhttp.InstrumentHandlerDuration(durationHistogram.MustCurryWith(prometheus.Labels{"handler": "dash.jpg"}), http.HandlerFunc(dashHandler(td, calendar))))
+		http.Handle("/metrics", promhttp.Handler())
 		// http.HandleFunc("/refresh-auth", authHandler("credentials.json", "token.json"))
 
 		log.Println("Listening on :8364")
