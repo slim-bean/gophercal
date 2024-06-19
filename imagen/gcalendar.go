@@ -58,7 +58,10 @@ func GenerateCalendarImage(events []gcalendar.Event) image.Image {
 	// Draw the hour lines.
 	for i := 0; i < maxHours; i++ {
 		yStart := float64(i) * calHeight / maxHours
+		timeFace := truetype.NewFace(font, &truetype.Options{Size: 25})
+		calCtx.SetFontFace(timeFace)
 		calCtx.DrawStringAnchored(fmt.Sprintf("%d:00", (startHour+i)%24), 0, yStart, 0, 1)
+		calCtx.SetFontFace(face)
 
 		rectangleWidth := calWidth - 2*outsideBoundaryWidth
 		calCtx.SetLineWidth(lineWidth)
