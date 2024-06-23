@@ -27,7 +27,7 @@ You need to authenticate with Google Calendar via OAuth. And this requires you t
 1. Configure OAuth scopes [as show here](https://developers.google.com/workspace/guides/configure-oauth-consent). You need to choose `auth/userinfo.email` and `calendar.events.readonly` scope.
 1. Create OAuth client credentials [as shown here](https://developers.google.com/workspace/guides/create-credentials) and download the credentials file. You need to choose Desktop App, and store the credentials file.
 
-You can see example of the steps here.
+You can see example of the steps [here](./docs/creating-credentials.md).
 
 ### 3. Create OAuth token for Google Calendar
 
