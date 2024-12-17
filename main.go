@@ -152,7 +152,8 @@ func authHandler(config *oauth2.Config, tokenFile string) func(w http.ResponseWr
 			return
 		}
 
-		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+		// offline and forced approval are requried to get a refresh token in the response, if you were already logged in you wouldn't get a refresh token.
+		authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline, oauth2.ApprovalForce)
 		http.Redirect(w, r, authURL, http.StatusFound)
 	}
 }
