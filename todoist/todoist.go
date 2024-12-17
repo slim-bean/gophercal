@@ -27,7 +27,8 @@ func New(token string) Todoist {
 
 func (t Todoist) GetTodaysTasks() ([]Task, error) {
 	apiTasks, err := t.client.GetActiveTasks(todoist.GetActiveTasksRequest{
-		Filter: "(today | overdue)",
+		//Filter: "(today | overdue)",
+		Filter: "(#This Week & /Todo)",
 	})
 	if err != nil {
 		return nil, err

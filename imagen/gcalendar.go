@@ -9,8 +9,9 @@ import (
 
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
-	"github.com/gouthamve/gophercal/gcalendar"
 	"golang.org/x/image/font/gofont/goregular"
+
+	"github.com/gouthamve/gophercal/gcalendar"
 )
 
 // The inkplate is 1200x825. 50% of it would be calendar, hence 600x825
@@ -38,8 +39,13 @@ func GenerateCalendarImage(events []gcalendar.Event) image.Image {
 	calCtx.Fill()
 
 	calCtx.SetRGB(0, 0, 0)
+	//FIXME this should be configurable
+	loc, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Start from the previous hour.
-	hours, minutes, _ := time.Now().Clock()
+	hours, minutes, _ := time.Now().In(loc).Clock()
 	startHour := hours - 1
 
 	// Draw the line for the current time.

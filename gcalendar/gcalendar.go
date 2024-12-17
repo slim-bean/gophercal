@@ -3,6 +3,7 @@ package gcalendar
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
@@ -45,20 +45,20 @@ type Calendar struct {
 	email string
 }
 
-func NewCalendar(credsFile, token, email string) (*Calendar, error) {
+func NewCalendar(config *oauth2.Config, tokenFile, email string) (*Calendar, error) {
 	ctx := context.Background()
-	b, err := os.ReadFile(credsFile)
-	if err != nil {
-		return nil, err
-	}
+	//b, err := os.ReadFile(credsFile)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//// If modifying these scopes, delete your previously saved token.json.
+	//config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	// If modifying these scopes, delete your previously saved token.json.
-	config, err := google.ConfigFromJSON(b, calendar.CalendarReadonlyScope)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := getClient(config)
+	client, err := getClient(config, tokenFile)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,6 @@ func (c Calendar) Events() ([]Event, error) {
 	endTime := startTime.Add(15 * time.Hour)
 
 	calEvents, err := c.srv.Events.List(calendarName).
-		// TimeZone(timeZone).
 		TimeMin(startTime.Format(time.RFC3339)).
 		TimeMax(endTime.Format(time.RFC3339)).
 		ShowDeleted(false).
@@ -114,24 +113,30 @@ func (c Calendar) Events() ([]Event, error) {
 			return nil, err
 		}
 
-		events = append(events, Event{Start: startTime, End: endTime, Title: item.Summary})
+		//FIXME this should be configurable
+		loc, err := time.LoadLocation("America/New_York")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		events = append(events, Event{Start: startTime.In(loc), End: endTime.In(loc), Title: item.Summary})
 	}
 
 	return events, nil
 }
 
 // Retrieve a token, saves the token, then returns the generated client.
-func getClient(config *oauth2.Config) (*http.Client, error) {
+func getClient(config *oauth2.Config, tokenFile string) (*http.Client, error) {
 	// The file token.json stores the user's access and refresh tokens, and is
 	// created automatically when the authorization flow completes for the first
 	// time.
-	tokFile := "token.json"
-	tok, err := tokenFromFile(tokFile)
+	//tokFile := "token.json"
+	tok, err := tokenFromFile(tokenFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return oauth2.NewClient(context.Background(), newPersistingTokenSource(config.TokenSource(context.Background(), tok), tokFile)), nil
+	return oauth2.NewClient(context.Background(), newPersistingTokenSource(config.TokenSource(context.Background(), tok), tokenFile)), nil
 }
 
 // Retrieves a token from a local file.
