@@ -22,7 +22,7 @@ const (
 	hourHeight float64 = calHeight / maxHours
 )
 
-func GenerateCalendarImage(events []gcalendar.Event) image.Image {
+func GenerateCalendarImage(events []gcalendar.Event, location string) image.Image {
 	font, err := truetype.Parse(goregular.TTF)
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +39,15 @@ func GenerateCalendarImage(events []gcalendar.Event) image.Image {
 
 	calCtx.SetRGB(0, 0, 0)
 	// Start from the previous hour.
-	hours, minutes, _ := time.Now().Clock()
+	loc := time.Local
+	if location != "" {
+		loc, err = time.LoadLocation(location)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	hours, minutes, _ := time.Now().In(loc).Clock()
 	startHour := hours - 1
 
 	// Draw the line for the current time.
