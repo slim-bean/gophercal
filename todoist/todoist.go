@@ -9,6 +9,7 @@ import (
 
 type Todoist struct {
 	client *todoist.Client
+	filter string
 }
 
 type Task struct {
@@ -19,15 +20,16 @@ type Task struct {
 	Due     time.Time
 }
 
-func New(token string) Todoist {
+func New(token, filter string) Todoist {
 	return Todoist{
 		client: todoist.New(token),
+		filter: filter,
 	}
 }
 
 func (t Todoist) GetTodaysTasks() ([]Task, error) {
 	apiTasks, err := t.client.GetActiveTasks(todoist.GetActiveTasksRequest{
-		Filter: "(today | overdue)",
+		Filter: t.filter,
 	})
 	if err != nil {
 		return nil, err

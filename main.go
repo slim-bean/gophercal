@@ -58,7 +58,7 @@ func main() {
 
 	switch ctx.Command() {
 	case "run":
-		td := todoist.New(gopherCal.Run.TodoistToken)
+		td := todoist.New(gopherCal.Run.TodoistToken, gopherCal.Run.TodoistFilter)
 
 		b, err := os.ReadFile(gopherCal.Run.GCalCredsFile)
 		if err != nil {
