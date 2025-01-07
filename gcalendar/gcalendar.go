@@ -57,7 +57,7 @@ func NewCalendar(config *oauth2.Config, tokenFile, email, location string) (*Cal
 	client.Transport = promhttp.InstrumentRoundTripperDuration(clientCallHistogram, client.Transport)
 
 	srv, err := calendar.NewService(ctx, option.WithHTTPClient(client))
-	return &Calendar{srv: srv, email: email}, err
+	return &Calendar{srv: srv, email: email, location: location}, err
 }
 
 func (c Calendar) Events() ([]Event, error) {
