@@ -82,7 +82,7 @@ func GenerateCalendarImage(events []gcalendar.Event, location string) image.Imag
 	for _, event := range events {
 		overlapping := false
 		for i, group := range overlappingEvents {
-			if group[0].End.Before(event.Start) {
+			if group[0].End.Before(event.Start) || group[0].End.Equal(event.Start) {
 				continue
 			}
 			overlappingEvents[i] = append(group, event)
