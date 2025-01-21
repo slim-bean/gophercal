@@ -6,3 +6,5 @@ dash.jpg
 gophercal
 
 dist/
+.idea/
+generate-gcal-token

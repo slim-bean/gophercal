@@ -10,6 +10,7 @@ import (
 type Todoist struct {
 	client *todoist.Client
 	filter string
+	sortBy string
 }
 
 type Task struct {
@@ -18,12 +19,14 @@ type Task struct {
 	Section string
 	Content string
 	Due     time.Time
+	Order   int
 }
 
-func New(token, filter string) Todoist {
+func New(token, filter, sortBy string) Todoist {
 	return Todoist{
 		client: todoist.New(token),
 		filter: filter,
+		sortBy: sortBy,
 	}
 }
 
@@ -79,12 +82,20 @@ func (t Todoist) GetTodaysTasks() ([]Task, error) {
 			Section: sections[task.SectionId],
 			Content: task.Content,
 			Due:     due,
+			Order:   task.Order,
 		})
 	}
 
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].Due.Before(tasks[j].Due)
-	})
+	switch t.sortBy {
+	case "order":
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].Order < tasks[j].Order
+		})
+	default: // "due-date"
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].Due.Before(tasks[j].Due)
+		})
+	}
 
 	return tasks, nil
 }

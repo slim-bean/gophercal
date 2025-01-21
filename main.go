@@ -33,6 +33,7 @@ var gopherCal struct {
 
 		TodoistFilter string `kong:"help='Todoist filter to use',default='(today | overdue)',name='todoist-filter'"`
 		Location      string `kong:"help='Location to use for weather',default='',name='location'"`
+		SortBy        string `kong:"help='Sort tasks by (due-date or order)',default='due-date',name='sort-by',enum='due-date,order'"`
 	} `cmd:""`
 }
 
@@ -58,7 +59,7 @@ func main() {
 
 	switch ctx.Command() {
 	case "run":
-		td := todoist.New(gopherCal.Run.TodoistToken, gopherCal.Run.TodoistFilter)
+		td := todoist.New(gopherCal.Run.TodoistToken, gopherCal.Run.TodoistFilter, gopherCal.Run.SortBy)
 
 		b, err := os.ReadFile(gopherCal.Run.GCalCredsFile)
 		if err != nil {
