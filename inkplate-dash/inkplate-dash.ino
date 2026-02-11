@@ -263,17 +263,6 @@ void getandprintdash() {
         display.setTextColor(BLACK);
     }
 
-    // if (n > 60)        // Check if you need to do full refresh or you can do partial update
-    // {
-    //     display.display(); // Do a full refresh
-    //     n = 0;
-    // }
-    // else
-    // {
-    //     display.partialUpdate(); // Do partial update
-    //     n++;                                // Keep track on how many times screen has been partially updated
-    // }
-
     // Draw image on the screen
     display.display();
     // display.clearDisplay();
