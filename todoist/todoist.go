@@ -14,6 +14,7 @@ const baseURL = "https://api.todoist.com/api/v1"
 type Todoist struct {
 	token  string
 	filter string
+	sortBy string
 	client *http.Client
 }
 
@@ -23,6 +24,7 @@ type Task struct {
 	Section string
 	Content string
 	Due     time.Time
+	Order   int
 }
 
 // API response types
@@ -37,6 +39,7 @@ type apiTask struct {
 	SectionId string  `json:"section_id"`
 	Content   string  `json:"content"`
 	Due       *apiDue `json:"due"`
+	Order     int     `json:"child_order"`
 }
 
 type apiTasksResponse struct {
@@ -53,10 +56,11 @@ type apiSection struct {
 	Name string `json:"name"`
 }
 
-func New(token, filter string) Todoist {
+func New(token, filter, sortBy string) Todoist {
 	return Todoist{
 		token:  token,
 		filter: filter,
+		sortBy: sortBy,
 		client: &http.Client{Timeout: 30 * time.Second},
 	}
 }
@@ -167,12 +171,20 @@ func (t Todoist) GetTodaysTasks() ([]Task, error) {
 			Section: sections[task.SectionId],
 			Content: task.Content,
 			Due:     due,
+			Order:   task.Order,
 		})
 	}
 
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].Due.Before(tasks[j].Due)
-	})
+	switch t.sortBy {
+	case "order":
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].Order < tasks[j].Order
+		})
+	default: // "due-date"
+		sort.Slice(tasks, func(i, j int) bool {
+			return tasks[i].Due.Before(tasks[j].Due)
+		})
+	}
 
 	return tasks, nil
 }
