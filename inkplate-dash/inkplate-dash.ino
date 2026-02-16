@@ -41,13 +41,15 @@ String url = "http://<server-url>:8364/dash.jpg"; // the url of the server gener
 // Here you can change the interval of updating the image.
 #define UPDATE_INTERVAL_IN_SESCS 300
 
-// Retry settings for image loading with exponential backoff
+// Retry settings for image loading with exponential backoff (for HTTP/network failures)
 #define MAX_RETRIES 5
 #define RETRY_MIN_DELAY_MS 2000UL   // Start with 2 seconds
 #define RETRY_MAX_DELAY_MS 60000UL  // Cap at 60 seconds
 #define RETRY_BACKOFF_MULTIPLIER 2UL // Double the delay each time
+#define OOM_RETRY_DELAY_MS 2000UL   // Fixed short delay for alloc failure (backoff doesn't help OOM)
 
-// Watchdog timeout in seconds (should be longer than max possible update time)
+// Watchdog timeout in seconds. 120s is enough: we reset after each http.GET() (max 60s)
+// and every 2s during backoff, so we never go >60s between resets in the retry path.
 #define WDT_TIMEOUT_SECS 120
 
 // Reset WDT at least this often during long delays (backoff) so we never exceed WDT timeout
@@ -171,10 +173,10 @@ void getandprintdash() {
                     Serial.println("Failed to allocate memory for image");
                     http.end();
                     if (attempt < MAX_RETRIES) {
-                        Serial.println("Retrying in " + String(retryDelay / 1000.0, 1) + " seconds...");
-                        delayWithWdtReset(retryDelay);
-                        // Exponential backoff: double the delay for next time, up to max
-                        retryDelay = min(retryDelay * RETRY_BACKOFF_MULTIPLIER, RETRY_MAX_DELAY_MS);
+                        // OOM rarely resolves by waiting; use a short fixed delay and don't
+                        // increase retryDelay (that's for HTTP backoff only).
+                        Serial.println("Retrying in " + String(OOM_RETRY_DELAY_MS / 1000) + " seconds...");
+                        delayWithWdtReset(OOM_RETRY_DELAY_MS);
                     }
                     continue;
                 }
@@ -217,14 +219,20 @@ void getandprintdash() {
                     }
                 }
 
-                // Draw image into the frame buffer of Inkplate
-                display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
-
-                // Free the memory where the image was stored because it is now in the frame buffer
+                // Clear frame buffer first: drawJpegFromBuffer only writes the decoded
+                // image rectangle, so any area not covered would show old content.
+                display.clearDisplay();
+                // Draw image into the frame buffer of Inkplate; free buffer immediately
+                // after so we never leak on draw failure or future code changes.
+                bool drew = display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
                 free(buffer);
-                success = true;
-                hasLoadedImage = true; // Mark that we've successfully loaded an image
-                Serial.println("Image loaded successfully");
+                if (drew) {
+                    success = true;
+                    hasLoadedImage = true; // Mark that we've successfully loaded an image
+                    Serial.println("Image loaded successfully");
+                } else {
+                    Serial.println("Failed to decode image");
+                }
             }
             else
             {
@@ -262,7 +270,6 @@ void getandprintdash() {
         // Note using 7 here because in 3 bit mode the color range is 0 to 7 and the WHITE definition is 1 which is still nearly black. 
         display.setTextColor(7);
         display.setCursor(5, 5);
-        display.setTextSize(2);
 
         if (lastHttpCode == HTTP_CODE_OK) {
             display.println("ERROR: Invalid length");
@@ -280,6 +287,7 @@ void getandprintdash() {
 
     // Draw image on the screen
     display.display();
-    // display.clearDisplay();
+    // Clear frame buffer after flush (does not clear the physical display; next update starts from clean buffer)
+    display.clearDisplay();
     lastConnectionTime = millis();
 }
