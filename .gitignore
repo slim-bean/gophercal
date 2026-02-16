@@ -4,5 +4,6 @@ credentials.json
 token.json
 dash.jpg
 gophercal
+inkplate-dash/config_secret.h
 
 dist/

@@ -31,12 +31,7 @@
 Inkplate display(INKPLATE_1BIT);
 
 /**************** CHANGE HERE ******************/
-
-char *ssid = "your_ssid_goes_here"; // Your WiFi SSID
-char *pass = "your_password_goes_here"; // Your WiFi password
-
-// Add the URL of the image you want to show on Inkplate
-String url = "http://<server-url>:8364/dash.jpg"; // the url of the server generating the image
+#include "config_secret.h"  // Copy config_secret.h.example to config_secret.h and add ssid, pass, url
 
 // Here you can change the interval of updating the image.
 #define UPDATE_INTERVAL_IN_SESCS 300

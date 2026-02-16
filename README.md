@@ -82,12 +82,14 @@ And access the generated image at `http://<server-ip>:8364/dash.jpg`.
 
 I have the Arduino code for the Soldered Inkplate [here](./inkplate-dash/). 
 
-Make sure to change the values in `inkplate-dash.ino`:
+Copy `inkplate-dash/config_secret.h.example` to `inkplate-dash/config_secret.h` and set:
 
-- `your_ssid_goes_here`
-- `your_password_goes_here`
-- `<server-url>`
+- `your_ssid_goes_here` (WiFi SSID)
+- `your_password_goes_here` (WiFi password)
+- `<server-url>` (in the image URL)
 
-You should set up your environment as described here: https://inkplate.readthedocs.io/en/latest/ and you can upload the `inkplate-dash.ino` after.
+`config_secret.h` is gitignored so credentials are not committed.
+
+Set up your environment as described here: https://inkplate.readthedocs.io/en/latest/ and you can upload the sketch after.
 
 However, it is a simple loop that just downloads the image from `http://<server-url>:8364/dash.jpg` every 5 minutes.
