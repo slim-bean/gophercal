@@ -69,10 +69,11 @@ void setup()
     display.setTextSize(2);      // Set text size to be 2 times bigger than original (5x7 px)
     display.setTextColor(BLACK); // Set text color to black
 
+    Serial.begin(115200);
+
     // Initialize watchdog timer
     esp_task_wdt_init(WDT_TIMEOUT_SECS, true); // Enable panic so ESP32 restarts
     esp_task_wdt_add(NULL);                    // Add current thread to WDT watch
-    Serial.begin(115200);
     Serial.println("Watchdog initialized with " + String(WDT_TIMEOUT_SECS) + "s timeout");
 
     // Let's connect to the WiFi
