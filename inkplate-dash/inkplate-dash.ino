@@ -191,13 +191,13 @@ void getandprintdash() {
                 while (http.connected() && (len > 0 || len == -1))
                 {
                     // Get the number of available bytes
-                    size_t size = stream->available();
+                    size_t availableBytes = stream->available();
 
                     // If there are available bytes, read them
-                    if (size)
+                    if (availableBytes)
                     {
                         // Read available bytes from the stream and store them in the buffer
-                        int c = stream->readBytes(buff, ((size > sizeof(buff)) ? sizeof(buff) : size));
+                        int c = stream->readBytes(buff, ((availableBytes > sizeof(buff)) ? sizeof(buff) : availableBytes));
                         memcpy(buffPtr, buff, c);
 
                         // As we read the data, we subtract the length we read and the remaining length is in the variable
