@@ -50,6 +50,9 @@ String url = "http://<server-url>:8364/dash.jpg"; // the url of the server gener
 // Watchdog timeout in seconds (should be longer than max possible update time)
 #define WDT_TIMEOUT_SECS 120
 
+// Reset WDT at least this often during long delays (backoff) so we never exceed WDT timeout
+#define WDT_RESET_INTERVAL_MS 2000
+
 /***********************************************/
 
 // Variable that holds last connection time
@@ -119,7 +122,16 @@ void loop()
     }
 }
 
-uint8_t n;
+// Delay for ms milliseconds, resetting WDT periodically so long backoffs don't trigger the watchdog.
+static void delayWithWdtReset(unsigned long ms) {
+    unsigned long elapsed = 0;
+    while (elapsed < ms) {
+        unsigned long chunk = (ms - elapsed) > WDT_RESET_INTERVAL_MS ? WDT_RESET_INTERVAL_MS : (ms - elapsed);
+        delay(chunk);
+        elapsed += chunk;
+        esp_task_wdt_reset();
+    }
+}
 
 void getandprintdash() {
     bool success = false;
@@ -128,6 +140,7 @@ void getandprintdash() {
     unsigned long retryDelay = RETRY_MIN_DELAY_MS;
 
     for (int attempt = 1; attempt <= MAX_RETRIES && !success; attempt++) {
+        esp_task_wdt_reset(); // Feed WDT at start of each retry (before long GET)
         Serial.println("Attempt " + String(attempt) + " of " + String(MAX_RETRIES));
 
         // Make an object for the HTTP client
@@ -137,6 +150,7 @@ void getandprintdash() {
 
         // Do a get request to get the image
         int httpCode = http.GET();
+        esp_task_wdt_reset(); // Feed WDT after GET returns (GET can take up to 60s)
         lastHttpCode = httpCode;
 
         // If everything is OK
@@ -157,7 +171,7 @@ void getandprintdash() {
                     http.end();
                     if (attempt < MAX_RETRIES) {
                         Serial.println("Retrying in " + String(retryDelay / 1000.0, 1) + " seconds...");
-                        delay(retryDelay);
+                        delayWithWdtReset(retryDelay);
                         // Exponential backoff: double the delay for next time, up to max
                         retryDelay = min(retryDelay * RETRY_BACKOFF_MULTIPLIER, RETRY_MAX_DELAY_MS);
                     }
@@ -226,7 +240,7 @@ void getandprintdash() {
         // If not successful and more retries remain, wait before retrying with exponential backoff
         if (!success && attempt < MAX_RETRIES) {
             Serial.println("Retrying in " + String(retryDelay / 1000.0, 1) + " seconds...");
-            delay(retryDelay);
+            delayWithWdtReset(retryDelay);
             // Exponential backoff: double the delay for next time, up to max
             retryDelay = min(retryDelay * RETRY_BACKOFF_MULTIPLIER, RETRY_MAX_DELAY_MS);
         }
