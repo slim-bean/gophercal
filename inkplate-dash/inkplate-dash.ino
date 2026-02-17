@@ -281,7 +281,9 @@ void getandprintdash() {
                 // Let's fetch the data
                 WiFiClient *stream = http.getStreamPtr(); // We need a stream pointer to know how much data is available
 
-                // Repeat as long as we have a connection and while there is data to read
+                // Repeat as long as we have a connection and while there is data to read.
+                // Track time since last data to detect server stalls.
+                unsigned long lastDataTime = millis();
                 while (http.connected() && (len > 0 || len == -1))
                 {
                     // Never read past the end of buffer (server may send more than Content-Length)
@@ -305,12 +307,23 @@ void getandprintdash() {
                             buffPtr += c;
                             if (len > 0)
                                 len -= c;
+                            lastDataTime = millis();
                         }
                         esp_task_wdt_reset();
                     }
                     else if (len == -1)
                     {
                         len = 0;
+                    }
+                    else
+                    {
+                        // No data available yet — yield CPU and check for stall timeout
+                        delay(1);
+                        esp_task_wdt_reset();
+                        if ((unsigned long)(millis() - lastDataTime) > 30000UL) {
+                            Serial.println("Download stalled (no data for 30s)");
+                            break;
+                        }
                     }
                 }
 
