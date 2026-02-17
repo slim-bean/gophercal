@@ -148,7 +148,6 @@ static void drawErrorOverlay(int attempt, unsigned long retryDelayMs, int lastHt
     }
     display.fillRect(0, 0, display.width(), ERROR_OVERLAY_HEIGHT, BLACK);
     display.setTextColor(7);
-    display.setTextSize(1);
 
     display.setCursor(5, 5);
     display.print("Attempt ");
@@ -302,8 +301,11 @@ void getandprintdash() {
                     }
                 }
 
-                // Draw image into the frame buffer of Inkplate; free buffer immediately
-                // after so we never leak on draw failure or future code changes.
+                // Clear buffer before draw: drawJpegFromBuffer only writes the decoded
+                // rectangle, so old content would show in any area not covered by the JPEG.
+                display.clearDisplay();
+                // Draw image into the frame buffer; free buffer immediately after so we
+                // never leak on draw failure or future code changes.
                 bool drew = display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
                 free(buffer);
                 if (drew) {
@@ -366,10 +368,7 @@ void getandprintdash() {
 
     // Draw image on the screen
     display.display();
-    // Only clear buffer after success so next run draws on a clean buffer. After error we leave
-    // the buffer as-is (previous image + error overlay) so we don't wipe the display on refresh.
-    if (success) {
-        display.clearDisplay();
-    }
+    // Don't clear buffer here: after success the buffer has the image (so next error overlay
+    // draws on top of it), and after error it has the image+overlay (preserved for display).
     lastConnectionTime = millis();
 }
