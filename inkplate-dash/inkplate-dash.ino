@@ -322,6 +322,7 @@ void getandprintdash() {
                         esp_task_wdt_reset();
                         if ((unsigned long)(millis() - lastDataTime) > 30000UL) {
                             Serial.println("Download stalled (no data for 30s)");
+                            lastErrorDetail = "Download timeout";
                             break;
                         }
                     }
