@@ -1,5 +1,3 @@
-#include <Inkplate.h>
-
 /*
    Inkplate10_Show_JPG_With_HTTPClient example for Soldered Inkplate 10
    For this example you will need a USB-C cable, Inkplate 10, and an available WiFi connection.
@@ -326,20 +324,34 @@ void getandprintdash() {
                     }
                 }
 
-                // Clear buffer before draw: drawJpegFromBuffer only writes the decoded
-                // rectangle, so old content would show in any area not covered by the JPEG.
-                display.clearDisplay();
-                // Draw image into the frame buffer; free buffer immediately after so we
-                // never leak on draw failure or future code changes.
-                bool drew = display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
-                free(buffer);
-                if (drew) {
-                    success = true;
-                    hasLoadedImage = true; // Mark that we've successfully loaded an image
-                    Serial.println("Image loaded successfully");
+                // Check that we received the full image before attempting decode
+                size_t received = (size_t)(buffPtr - buffer);
+                if (received < (size_t)size) {
+                    Serial.print("Incomplete download: ");
+                    Serial.print(received);
+                    Serial.print(" of ");
+                    Serial.print(size);
+                    Serial.println(" bytes");
+                    free(buffer);
+                    if (lastErrorDetail == NULL) {
+                        lastErrorDetail = "Incomplete download";
+                    }
                 } else {
-                    Serial.println("Failed to decode image");
-                    lastErrorDetail = "Decode failed";
+                    // Clear buffer before draw: drawJpegFromBuffer only writes the decoded
+                    // rectangle, so old content would show in any area not covered by the JPEG.
+                    display.clearDisplay();
+                    // Draw image into the frame buffer; free buffer immediately after so we
+                    // never leak on draw failure or future code changes.
+                    bool drew = display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
+                    free(buffer);
+                    if (drew) {
+                        success = true;
+                        hasLoadedImage = true; // Mark that we've successfully loaded an image
+                        Serial.println("Image loaded successfully");
+                    } else {
+                        Serial.println("Failed to decode image");
+                        lastErrorDetail = "Decode failed";
+                    }
                 }
                 }
             }
@@ -391,8 +403,11 @@ void getandprintdash() {
         }
     }
 
-    // Draw image on the screen
-    display.display();
+    // Draw image on the screen, only if we successfully loaded an image.
+    // If we failed we already drew the error overlay.
+    if (success) {
+        display.display();
+    }
     // Don't clear buffer here: after success the buffer has the image (so next error overlay
     // draws on top of it), and after error it has the image+overlay (preserved for display).
     lastConnectionTime = millis();
