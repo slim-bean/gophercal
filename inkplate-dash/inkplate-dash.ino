@@ -110,8 +110,13 @@ void setup()
     Serial.print("Connected to WiFi network with IP Address: ");
     Serial.println(WiFi.localIP());
     Serial.println("Switching to 3-bit mode in 5 seconds...");
+
+    display.println();
+    display.print("Connected! IP: ");
+    display.println(WiFi.localIP());
+    display.println("Switching to 3-bit mode in 5s...");
     display.partialUpdate();
-    // Wait 5 seconds so that folks can see the IP if they want to for some reason.
+    // Wait 5 seconds so that folks can see the IP and status on-screen.
     delay(5000);
 
     // Switch to 3-bit mode so the image will be of better quality
