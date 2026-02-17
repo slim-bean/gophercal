@@ -34,7 +34,7 @@ Inkplate display(INKPLATE_1BIT);
 #include "config_secret.h"  // Copy config_secret.h.example to config_secret.h and add ssid, pass, url
 
 // Here you can change the interval of updating the image.
-#define UPDATE_INTERVAL_IN_SESCS 300
+#define UPDATE_INTERVAL_IN_SECS 300
 
 // Retry settings for image loading with exponential backoff (for HTTP/network failures)
 #define MAX_RETRIES 5
@@ -113,8 +113,8 @@ void loop()
     // Reset watchdog timer
     esp_task_wdt_reset();
 
-    // Every POSTING_INTERVAL_IN_SESCS seconds make the POST request
-    if ((unsigned long)(millis() - lastConnectionTime) > UPDATE_INTERVAL_IN_SESCS * 1000LL)
+    // Every UPDATE_INTERVAL_IN_SECS seconds make the request
+    if ((unsigned long)(millis() - lastConnectionTime) > UPDATE_INTERVAL_IN_SECS * 1000LL)
     {
       getandprintdash();
     }
