@@ -123,6 +123,8 @@ void setup()
     // NOTE: You can't use partial update when the Inkplate is in the 3-bit mode!
     display.setDisplayMode(INKPLATE_3BIT);
     display.clearDisplay();
+    display.println();
+    display.println("Fetching dashboard...");
     display.display();
     getandprintdash();
 }
