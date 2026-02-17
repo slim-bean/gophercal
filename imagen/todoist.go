@@ -60,7 +60,7 @@ func GenerateTodoistImage(tasks []todoist.Task) image.Image {
 		taskWidth := textWidth * taskPortion
 		projectWidth := textWidth * projectPortion
 
-		taskName := truncateString(tdCtx, task.Content, float64(taskWidth))
+		taskName := truncateString(tdCtx, stripUnrenderable(font, task.Content), float64(taskWidth))
 		tdCtx.DrawStringAnchored(taskName, innerBoundaryWidth+outsideBoundaryWidth, yStart+taskHeight/2, 0, 0.5)
 
 		projectSeparatorX := innerBoundaryWidth + outsideBoundaryWidth + taskWidth
@@ -74,17 +74,18 @@ func GenerateTodoistImage(tasks []todoist.Task) image.Image {
 	return tdCtx.Image()
 }
 
-func truncateString(tdCtx *gg.Context, str string, maxWidth float64) string {
-	strWidth, _ := tdCtx.MeasureString(str)
+func truncateString(ctx *gg.Context, str string, maxWidth float64) string {
+	strWidth, _ := ctx.MeasureString(str)
 	if strWidth <= maxWidth {
 		return str
 	}
 
-	for i := len(str) - 1; i >= 0; i-- {
-		truncatedString := str[:i] + "..."
-		w, _ := tdCtx.MeasureString(truncatedString)
+	runes := []rune(str)
+	for i := len(runes) - 1; i >= 0; i-- {
+		truncated := string(runes[:i]) + "..."
+		w, _ := ctx.MeasureString(truncated)
 		if w <= maxWidth {
-			return truncatedString
+			return truncated
 		}
 	}
 

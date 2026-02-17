@@ -145,7 +145,7 @@ func drawEvent(event gcalendar.Event, overlaps int) image.Image {
 	evCtx.DrawRoundedRectangle(0, 0, float64(width), height, 5)
 	evCtx.Stroke()
 
-	eventName := truncateString(evCtx, event.Title, float64(width))
+	eventName := truncateString(evCtx, stripUnrenderable(font, event.Title), float64(width))
 	evCtx.DrawStringAnchored(eventName, float64(width)/2, height/2, 0.5, 0.5)
 	evCtx.Stroke()
 
