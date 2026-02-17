@@ -282,7 +282,10 @@ void getandprintdash() {
 
     // Draw image on the screen
     display.display();
-    // Clear frame buffer after flush (does not clear the physical display; next update starts from clean buffer)
-    display.clearDisplay();
+    // Only clear buffer after success so next run draws on a clean buffer. After error we leave
+    // the buffer as-is (previous image + error overlay) so we don't wipe the display on refresh.
+    if (success) {
+        display.clearDisplay();
+    }
     lastConnectionTime = millis();
 }
