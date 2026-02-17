@@ -222,9 +222,6 @@ void getandprintdash() {
                     }
                 }
 
-                // Clear frame buffer first: drawJpegFromBuffer only writes the decoded
-                // image rectangle, so any area not covered would show old content.
-                display.clearDisplay();
                 // Draw image into the frame buffer of Inkplate; free buffer immediately
                 // after so we never leak on draw failure or future code changes.
                 bool drew = display.drawJpegFromBuffer(buffer, size, 0, 0, true, false);
