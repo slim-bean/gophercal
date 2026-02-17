@@ -271,6 +271,8 @@ void getandprintdash() {
                 if (buffer == NULL) {
                     Serial.println("Failed to allocate memory for image");
                     lastErrorDetail = "Out of memory";
+                    // Free HTTP resources immediately to avoid holding response data in network buffers
+                    http.end();
                 } else {
 
                 uint8_t *buffPtr = buffer; // Copy of the buffer pointer so that the original one is not lost
@@ -287,8 +289,6 @@ void getandprintdash() {
                 while (http.connected() && (len > 0 || len == -1))
                 {
                     // Never read past the end of buffer (server may send more than Content-Length)
-                    if (buffPtr >= buffer + size)
-                        break;
                     size_t remaining = (size_t)((buffer + size) - buffPtr);
                     if (remaining == 0)
                         break;
@@ -301,8 +301,6 @@ void getandprintdash() {
                             toRead = remaining;
                         int c = stream->readBytes(buff, toRead);
                         if (c > 0) {
-                            if ((size_t)c > remaining)
-                                c = (int)remaining;
                             memcpy(buffPtr, buff, (size_t)c);
                             buffPtr += c;
                             if (len > 0)
