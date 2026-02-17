@@ -46,7 +46,6 @@ Inkplate display(INKPLATE_1BIT);
 #define RETRY_MIN_DELAY_MS 2000UL   // Start with 2 seconds
 #define RETRY_MAX_DELAY_MS 60000UL  // Cap at 60 seconds
 #define RETRY_BACKOFF_MULTIPLIER 2UL // Double the delay each time
-#define OOM_RETRY_DELAY_MS 2000UL   // Fixed short delay for alloc failure (backoff doesn't help OOM)
 
 // Watchdog timeout in seconds. 120s is enough: we reset after each http.GET() (max 60s)
 // and every 2s during backoff, so we never go >60s between resets in the retry path.
@@ -106,12 +105,14 @@ void setup()
         display.partialUpdate();
         esp_task_wdt_reset(); // Keep watchdog happy during WiFi connection
     }
-    display.println("\nWiFi OK! Downloading...");
-    display.partialUpdate();
-
+    
     Serial.println();
     Serial.print("Connected to WiFi network with IP Address: ");
     Serial.println(WiFi.localIP());
+    Serial.println("Switching to 3-bit mode in 5 seconds...");
+    display.partialUpdate();
+    // Wait 5 seconds so that folks can see the IP if they want to for some reason.
+    delay(5000);
 
     // Switch to 3-bit mode so the image will be of better quality
     // NOTE: You can't use partial update when the Inkplate is in the 3-bit mode!
@@ -147,6 +148,7 @@ static void drawErrorOverlay(int attempt, unsigned long retryDelayMs, int lastHt
         display.clearDisplay();
     }
     display.fillRect(0, 0, display.width(), ERROR_OVERLAY_HEIGHT, BLACK);
+    // In 3 bit mode the text color for white is 7, in 1 bit mode you can use BLACK or WHITE.
     display.setTextColor(7);
 
     int lineY = 5;
