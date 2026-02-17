@@ -50,6 +50,9 @@ Inkplate display(INKPLATE_1BIT);
 // Reset WDT at least this often during long delays (backoff) so we never exceed WDT timeout
 #define WDT_RESET_INTERVAL_MS 2000
 
+// Reject responses larger than this (getSize() can be wrong or malicious); dashboard image is typically much smaller
+#define MAX_IMAGE_SIZE (2 * 1024 * 1024)
+
 /***********************************************/
 
 // Variable that holds last connection time
@@ -154,13 +157,18 @@ void getandprintdash() {
         // If everything is OK
         if (httpCode == HTTP_CODE_OK)
         {
-            // Get the size of the image
+            // getSize() returns -1 when Content-Length is missing (e.g. chunked encoding)
             int32_t size = http.getSize();
             lastSize = size;
-            int32_t len = size; // Copy whose value we will change, but the original must not be lost
+            if (size < 0) {
+                Serial.println("Invalid response: Content-Length missing or invalid");
+            } else if (size == 0) {
+                Serial.println("Invalid response length: 0");
+            } else if ((uint32_t)size > MAX_IMAGE_SIZE) {
+                Serial.println("Response too large: " + String(size) + " (max " + String(MAX_IMAGE_SIZE) + ")");
+            } else {
+                int32_t len = size; // Copy whose value we will change, but the original must not be lost
 
-            if (size > 0)
-            {
                 // Allocate the memory for the image
                 uint8_t *buffer = (uint8_t *)ps_malloc(size);
 
@@ -228,10 +236,6 @@ void getandprintdash() {
                 } else {
                     Serial.println("Failed to decode image");
                 }
-            }
-            else
-            {
-                Serial.println("Invalid response length: " + String(size));
             }
         }
         else
