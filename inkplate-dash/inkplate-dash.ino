@@ -195,25 +195,24 @@ void getandprintdash() {
                 // Repeat as long as we have a connection and while there is data to read
                 while (http.connected() && (len > 0 || len == -1))
                 {
-                    // Get the number of available bytes
-                    size_t availableBytes = stream->available();
+                    // Never read past the end of buffer (server may send more than Content-Length)
+                    size_t remaining = (size_t)((buffer + size) - buffPtr);
+                    if (remaining == 0)
+                        break;
 
-                    // If there are available bytes, read them
+                    size_t availableBytes = stream->available();
                     if (availableBytes)
                     {
-                        // Read available bytes from the stream and store them in the buffer
-                        int c = stream->readBytes(buff, ((availableBytes > sizeof(buff)) ? sizeof(buff) : availableBytes));
-                        memcpy(buffPtr, buff, c);
-
-                        // As we read the data, we subtract the length we read and the remaining length is in the variable
-                        // len
-                        if (len > 0)
-                            len -= c;
-
-                        // Likewise for the buffer pointer
-                        buffPtr += c;
-
-                        // Reset watchdog during long downloads
+                        size_t toRead = (availableBytes > sizeof(buff)) ? sizeof(buff) : availableBytes;
+                        if (toRead > remaining)
+                            toRead = remaining;
+                        int c = stream->readBytes(buff, toRead);
+                        if (c > 0) {
+                            memcpy(buffPtr, buff, (size_t)c);
+                            buffPtr += c;
+                            if (len > 0)
+                                len -= c;
+                        }
                         esp_task_wdt_reset();
                     }
                     else if (len == -1)
