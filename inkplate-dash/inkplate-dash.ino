@@ -149,14 +149,16 @@ static void drawErrorOverlay(int attempt, unsigned long retryDelayMs, int lastHt
     display.fillRect(0, 0, display.width(), ERROR_OVERLAY_HEIGHT, BLACK);
     display.setTextColor(7);
 
-    display.setCursor(5, 5);
+    int lineY = 5;
+    display.setCursor(5, lineY);
     display.print("Attempt ");
     display.print(attempt);
     display.print(" of ");
     display.print(MAX_RETRIES);
     display.println(" failed");
 
-    display.setCursor(5, 18);
+    lineY += 16;
+    display.setCursor(5, lineY);
     if (errorDetail != NULL) {
         display.println(errorDetail);
     } else if (lastHttpCode != HTTP_CODE_OK) {
@@ -170,7 +172,8 @@ static void drawErrorOverlay(int attempt, unsigned long retryDelayMs, int lastHt
     bool hasBody = (errorBody != NULL && errorBody[0] != '\0');
     if (hasBody) {
         // Show first ~55 chars of body, replacing newlines with spaces
-        display.setCursor(5, 31);
+        lineY += 16;
+        display.setCursor(5, lineY);
         size_t bodyLen = strlen(errorBody);
         size_t limit = (bodyLen > 55) ? 55 : bodyLen;
         for (size_t i = 0; i < limit; i++) {
@@ -181,7 +184,8 @@ static void drawErrorOverlay(int attempt, unsigned long retryDelayMs, int lastHt
         display.println();
     }
 
-    display.setCursor(5, hasBody ? 44 : 31);
+    lineY += 16;
+    display.setCursor(5, lineY);
     if (retryDelayMs > 0) {
         display.print("Retrying in ");
         display.print((unsigned long)(retryDelayMs / 1000));
